@@ -181,7 +181,7 @@ You can put links to commits like this: [My favorite commit](https://coursework.
         * The main class that initializes the StageManager and sets up the animation
     * StageManager:
         * Initializes all the different types of possible screens
-        * Change change from screen to screen
+        * Change from screen to screen
         * Tells the main class (GamePlayer) what screen is currently displayed so GamePlayer can animate the scene 
         according to that screen's step function.
     * Generic Screen:
@@ -343,6 +343,156 @@ You can put links to commits like this: [My favorite commit](https://coursework.
          code that handles collisions in the BrickManager class.
 
 ### Alternate Designs
+
+* Design Choice 1: StageManager Class
+
+    * I designed the StageManager as a way to be able to change scenes from any Screen to another Screen.  However, 
+    this 
+    means that each Screen needed to be passed the StageManager and that the StageManager needed to be able to 
+    initialize Screens.  This lead to the following circular dependencies that can be seen in the StageManager 
+    constructor:
+    
+    ```java
+    /**
+         * StageManager Constructor creates the StageManager and initializes all screens being managed
+         * Sets the currentScreen to a GenericScreen in teh beginning.
+         * @param stage
+         */
+        public StageManager(Stage stage) {
+            this.mainScreen = new MainScreen(this);
+            this.gameLevel = new GameLevel(this,1,GameDifficulty.BEGINNING_MODE);
+            this.pauseScreen = new PauseScreen(this);
+            this.cheatKeyMode = new CheatKeyMode(this);
+            this.tutorialMode = new TutorialMode(this);
+            this.stage = stage;
+            this.currentScreen = new GenericScreen();
+            stage.setScene(currentScreen.getMyScene()); 
+        }
+  ```
+     * As mentioned before, I am sure that passing itself as the parameter to initialize another object in its constructor 
+  is a bad practice but I was unsure of any other way to get the same functionality other than constantly adding and 
+  removing objects from the root's children every time I wanted to make a sweeping change of what was being displayed
+  .  The way the StageManager is implemented and used makes it essentially a global variable across all classes, 
+  which from the readings and class I now know is not okay to have.
+     * The StageManager I have implemented, however, does have many advantages.  First of all, it makes the process of 
+  switching screens very easy.  All that one has to do it is call stageManager.switchScene() and specify which scene 
+  to switch to.  Another benefit of the StageManager is that it allows the main class to be very simple and easy to 
+  understand.  All that is being done in the main class is initializing the StageManager setting up the animation.
+  
+  ```java
+  /**
+       * Initialize the stageManager and switch scenes to load the Main Screen of the application
+       * Establish the animation loop
+       */
+      @Override
+      public void start (Stage stage) {
+          stageManager = new StageManager(stage);
+  
+          stageManager.switchScene(stageManager.getMainScreen());
+  
+          //attach "game loop" to timeline to play it
+          var frame = new KeyFrame(Duration.millis(MILLISECOND_DELAY), e -> step(SECOND_DELAY));
+          var animation = new Timeline();
+          animation.setCycleCount(Timeline.INDEFINITE);
+          animation.getKeyFrames().add(frame);
+          animation.play();
+  
+      }
+  
+      private void step(double secondDelay) {
+          stageManager.getCurrentScreen().step(secondDelay);
+      }
+  ```
+    * Furthermore, the StageManager class feels like a very readable abstraction.  The nuances of how the 
+  StageManager is implemented can be kind of difficult to understand, but whenever it is used in the code, its 
+  purpose is clear and readable.  An example of this readability is shown below:
+  ```java
+  else if (code == KeyCode.SPACE){
+              myStageManager.switchScene(myStageManager.getPauseScreen());
+          }
+  ```
+     * A final advantage of using the StageManager is that it is easy to save the current state of the game because the 
+  StageManager will have access to the most recent instance of GameLevel.  This makes pause and resume functionality 
+  much easier and allows me to better integrate the game state to what is being displayed in the pause screen.
+    * As mentioned before, the main drawbacks of the StageManager are its confusing dependencies and its implementation
+   as almost a global variable.
+   
+    * An alternative to the StageManager that I was considering was to simply remove everything from old contents from 
+  the root and add new objects to the root every time I wanted to make a large change in what was being displayed.  
+  This method for controlling what is being displayed has the advantages of not having any huge or confusing 
+  dependencies like the StageManager.  However, this strategy has many disadvantages.  First, there would be a lot of 
+  repetition of code when it comes to clearing out the root and re-establishing what is supposed to be displayed.  
+  Second, all classes would still have to access the root somehow so I wouldn't be able to avoid having some kind of 
+  implementation of a practically global variable (it would be the root instead of the StageManager).  This method 
+  does not allow you to maintain state as well because each time you change from screen to screen, it would remove 
+  everything from the screen and you would have to work much harder to keep track of which objects are in what state
+   and how the objects that are included in the root will have to change going from each possible screen to every 
+   other possible screen.  This method would lead to a lot more hard-coding of transitions.
+    * Ultimately, I decided that te StageManager rote was the way to go, but I am not convinced that it would be the 
+  best option in the future but I am unsure as to what would be a better way to implement and handle changing the 
+  display.
+
+
+* Design Choice Two: Handling of Collisions Between Sprites
+
+    * Collisions between sprites (the bouncer, the paddle, bricks, etc.) are at the heart of the game because pretty 
+    much every significant event is a collision between sprites.  Seeing as the bouncer would be in every collision, 
+    I determined that the best way to handle the collisions would be through a method in the Bouncer class that 
+    updates the Bouncer.  This method is shown below:
+    
+    ```java
+    /**
+         * This method updates the Bouncer's position by computing new position from current position and velocity
+         * This method also handles Bouncer's collisions with all other objects in the scene
+         * These include walls, paddles, bricks
+         * @param elapsedTime
+         * @param scene
+         * @param paddle
+         * @param bricks
+         * @param root
+         * @return the bricks that the Bouncer collided with so they can be handled by the BrickManager
+         */
+        public List<GenericBrick> handleBouncerCollisions(double elapsedTime, Scene scene, Paddle paddle, ArrayList<GenericBrick> bricks,
+                                                          Group root){
+            updatePosition(elapsedTime);
+            handleWallCollisions(scene);
+            handlePaddleCollisions(paddle);
+            List<GenericBrick> effectedBricks = findEffectedBricks(bricks, root);
+            return effectedBricks;
+        }
+  ```
+    * Originally, the goal of this method would be to check all the objects on the screen in every time step and see 
+    if the bouncer had collided with the object and if it had, make the bouncer bounce.  However, as I was coding, I 
+    realized that much more can happen on a bouncer collision than just the bouncer bouncing.  For example, a brick 
+    may disappear, or a brick may generate a power-up.  I had already implemented the method to make the bouncer 
+    bounce and I did not want to redo that functionality so I determined that since the other key events all involve 
+    a bouncer colliding with a brick, I would have this method simply return the list of bricks that the bouncer 
+    collided with and that I could pass this list of effected bricks to the BrickManager to be handled and update the
+     game accordingly.  At the time this felt like good design because everything that involved the bouncer was 
+     happening using Bouncer class methods and everything that involved the management of Bricks was using the 
+     BrickManager methods.  Now however, I see that there is a lot of sharing that has to be done across classes 
+     seeing as the Bouncer has to know about all the Bricks, send the effected bricks back to the GameLevel class 
+     which then has to send them to the BrickManager which then sends information back to the GameLevel class.  
+     Furthermore, the Bouncer has to know everything about the paddle and the scene to be able to handle collisions. 
+      Ultimately, it happens to be the case that the Bouncer and BrickManager end up knowing pretty much everything 
+      about the current state of the game suggesting that functionality and information of each of these classes is 
+      not encapsulated very well.
+    * As mentioned earlier, creating a SpriteManager class and making Bouncer, Paddle, and GenericBrick all extend 
+    Sprite would have been a solution that better isolated the functionality of handling collisions and updating the 
+    state of the sprites on the screen.  With a SpriteManager class, the state of the bricks would be hidden from the
+     Bouncer, and the states of the Bouncer, Bricks and Paddle would all be hidden from the GameLevel class.  The 
+     SpriteManager would just handle all the collisions and report back to the game what needs to be updated in terms
+      of power-ups, number of lives, score, etc.  This would allow for better encapsulation and classes would only 
+      have the information they need and other information would be hidden from classes that don't really need it 
+      which goes along with the principles we were practicing in the hangman lab.
+
+* Three Most Important Bugs:
+    1. Cannot use the balldropper power-up before the previous balldropper has stopped running
+    2. There is no mode in which you advance levels sequentially, you are always allowed to choose which level you 
+    want to play.
+    3. The design as-is is not very extendable - particularly in the TutorialMode.
+      
+  
 
 Here is another way to look at my design:
 
