@@ -192,6 +192,10 @@ You can put links to commits like this: [My favorite commit](https://coursework.
     * MainScreen:
         * Loads a welcome screen with buttons that can lead to loading a new level, beginning the tutorial, or 
         viewing the list of cheat keys.
+    * PauseScreen:
+        * The PauseScreen displays information about the state of the current game as well as the objective of the 
+        game and the various cheat keys available to the player.
+        * The PauseScreen also allows the player to change levels or change the difficulty.
     * TutorialMode:
         * Creates all the different scenes that are displayed during the tutorial mode
         * Allows user to advance from one tutorial to the next
@@ -233,9 +237,26 @@ You can put links to commits like this: [My favorite commit](https://coursework.
              handle brick collisions would be closed to modification because they would be flexible enough to adapt 
              to any subclass of GenericBrick.  Therefore, to create a new kind of brick I would just have to specify 
              its image, its score, and its handleCollisionWithBouncer() method.
+    * PowerUpManager
+        * Handles the number of power-ups of each kind that are available to the user
+        * Updates the display based on power-up status
+        * Provides the machinery to display animate and display the power-ups
+            * The PowerUpManager could be better implemented if the power-ups themselves were classes.  This would 
+            divide up the functionality much better into more understandable, self-contained pieces.
+            
+            
+* How to add a new level:
+    1. Create a txt file that uses '-' to denote where you want the bricks to appear.
+    2. Specify the path to this file in the BrickManager class.
+    3. Add a condition for the level based on the number you want assigned to the level in the BrickManagerConstructor
+    4. Add a condition based on pressing the key corresponding to that level number in the PauseScreen class to 
+    initialize a new level of that number.
     
-
-
+    Note: I realize now that I should have created an inheritance hierarchy to handle levels in a more flexible, 
+    extendable 
+    way.  However, for not having done this, my implementation is not too terrible for adding new levels.
+    
+* Current Design Justification and Reflection:
     * The program starts at in the GamePlayer class by initializing the StageManager for the application.  The 
     StageManager initializes all the different kinds of screen that could be displayed throughout the application.  
     The screen types are CheatKeyMode, GameLevel, MainScreen, PuaseScreen and TutorialMode.  These all extend 
@@ -244,7 +265,13 @@ You can put links to commits like this: [My favorite commit](https://coursework.
      functionality of all the different possible kinds of screens but cannot exist concretely itself.  The animation 
      for the game is run using a Timeline and KeyFrames like in the example_bounce lab.  The animation progresses by 
      simply asking the StageManager which screen is currently being displayed, and then calling the step function for
-      that screen.
+      that screen.  As mentioned above, I realize that the StageManager's construction adds a lot of complexity to 
+      the program and that treating it as essentially a global variable is a bad practice, but this implementation 
+      ultimately saved me a lot of headaches because it made it easy to change scenes.  I think that creating the 
+      GenericScreen and its subclasses was close to being a good design choice but could have been implemented better
+      .  All things considered, I think this choice was a step in the right directions 
+      because it made handling animation very easy and my main GamePlayer class very simple.  I also think it is an 
+      example of me almost using abstraction and inheritance in an effective way.
     * When the game starts it displays the MainScreen which is a welcome screen with buttons that can lead to either 
     the TutorialMode, a screen that displays the various cheat keys (CheatKeyMode), or to start a new GameLevel.
     * The GameLevel class handles game play.  The class initializes a BrickManager that reads in the file 
@@ -265,8 +292,55 @@ You can put links to commits like this: [My favorite commit](https://coursework.
      allocating responsibilities regarding power-ups to the PowerUpManager was a good design choice in terms of 
      keeping the GameLevel class simple.  However, the PowerUpManager could have been better implemented in a way 
      that required less sharing of information and state between the PowerUpManager and the GameLevel classes.
-   * All screens have different key inputs that can be used to tell the StageManager to switch to a different screen.
+    * In retrospect, I should have have probably created a GenericGameLevel abstract class and extended the different
+     levels from that superclass.  This was my original plan (hence the name GameLevel) but as I got started coding 
+     it was hard for me to differentiate what things needed to be level specific and what needed to be general and 
+     came to the conclusion that all the levels would be so similar that I would repeat a lot of code if I were to 
+     implement each level separately.
 
+* Describing Features From Assignment Specification:
+    * Something Extra:
+        * For my something extra I decided to create a tutorial on how to play my game that outlines the rules and 
+        objectives of the game as well as allowing the user to play around with some of the functionality.  
+        * The tutorial is implemented in the TutorialMode class and requires the Bouncer class, the Paddle class, all
+         the Brick classes and the resource files associated with these classes (images).
+        * This feature is currently designed in one big class.  At the heart of this class is an extended if 
+        statement that is used to transition load the next tutorial screen based on the which tutorial screen is 
+        supposed to be displaying.  Each time the mouse is clicked the current tutorial number is incremented and the
+         next screen is loaded.
+        * The next screen gets loaded by changing the text that is being displayed, removing all unused items from 
+        the root's children list, and adding all the items that are needed for the new screen to the root.
+        * To add a new screen to the tutorial one would have to add a new condition to the long series of if 
+        statements and create a function that removes and adds the correct objects from the root.  To add a screen 
+        between two current screens, one would have to update the whole strand of tutorial numbers.  These are 
+        indicators of poor design according to the open-closed principle.  The TutorialMode class' functionality as 
+        it is currently implemented is not easily extendable and would have to be heavily modified to make any real 
+        changes.
+        * A better design of this class would be to replace my conditionals with polymorphism and create a class 
+        hierarchy of the various tutorial screens that extend a generic tutorial screen.  Then, to transfer from one 
+        screen to the next I could just have a method in each subclass called goToNextScreen() that will simply 
+        create a new instance of the next screen and switch to that screen.
+        
+    * Blocks (aka Bricks):
+        * For the specification of creating at least three different kinds of bricks that behave differently when 
+        colliding with the bouncer, I create five different kinds of bricks: a OneHitBrick, a TwoHitBrick, a 
+        ThreeHitBrick, a PermanentBrick, and a DangerBrick.
+        * The bricks require the images in the resources folder.  The bricks are contained in a BrickManager class 
+        that initializes the bricks based on specified positions in the layout txt files in the resources folder.  
+        The BrickManager class also handles all collisions between the bricks and the Bouncers to determine how a 
+        Brick's state should be updated (should it be cleared or have fewer hits remaining, etc.) and whether a brick 
+        should drop a power-up.
+        * All five of the bricks I created extended the abstract class GenericBrick.  This design choice of using an 
+        abstract class and extending it for different classes that are similar set me up to use inheritance and 
+        polymorphism effectively, however I did not execute it very well.
+        * Instead of including a handleCollision() method for each brick. I handled the collisions of each brick in a
+         conditional statement using instanceof.  If I redesigned this aspect of my brick implementation to better 
+         leverage polymorphism instead of conditionals as explained in the "Replace Conditional With Polymorphism" 
+         reading, I could have written code that better complied with the open-closed principle.  When my 
+         BrickManager is handling collisions it would be able to just call the implementation of the handleCollision
+         () method as specified in that brick type's overridden method.  Therefore, when creating a new kind of brick
+          I could just specify the brick's image and its handleCollision method and not have to change any of the 
+         code that handles collisions in the BrickManager class.
 
 ### Alternate Designs
 
