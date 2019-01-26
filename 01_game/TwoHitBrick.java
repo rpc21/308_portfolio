@@ -7,7 +7,6 @@ import javafx.scene.image.Image;
  * TwoHitBrick is an interesting use case of the getReplacementBrick() method in which a new OneHitBrick is returned
  * in the TwoHitBrick's place when the bouncer hits the TwoHitBrick.
  */
-
 /**
  * Brick that takes two hits to destroy and is worth 10 points for every collision
  */

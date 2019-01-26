@@ -154,25 +154,194 @@ Design Review
   SpriteManager would handle it.  
   
   
-  
+* First Piece of Code to Describe:
 
+    ```java
+    public class MainScreen extends GenericScreen{
+    
+        private static final double SIZE_TO_VBOX_PADDING_RATIO = 40.0;
+        private Rectangle welcomeScreenBackground;
+        private Button playGameButton;
+        private Button playTutorialButton;
+        private Button cheatKeysButton;
+        private ArrayList<Button> myButtons;
+        private ImageView myPaddle;
+        private Text welcomeText;
+        private VBox myVBox;
+    
+    
+        /**
+         * MainScreen default constructor
+         * @param stageManager
+         */
+        public MainScreen(StageManager stageManager){
+            super(stageManager);
+        }
+    
+        @Override
+        protected void setUpScene(int width, int height, Paint background) {
+            StackPane root = new StackPane();
+            var scene = new Scene(root, width, height, background);
+    
+            initializeWelcomeScreenBackground();
+            initializePaddle();
+            initializeWelcomeText();
+    
+            createButtons();
+    
+            addSceneElementsToVBox();
+    
+            root.getChildren().add(welcomeScreenBackground);
+            root.getChildren().add(myVBox);
+    
+            myScene = scene;
+    
+        }
+    
+        private void addSceneElementsToVBox() {
+            myVBox = new VBox(SIZE / SIZE_TO_VBOX_PADDING_RATIO);
+            myVBox.getChildren().addAll(new Text(""),new Text(""), new Text(""));
+            myVBox.getChildren().add(myPaddle);
+            myVBox.getChildren().add(new Text(""));
+            myVBox.getChildren().add(welcomeText);
+            myVBox.getChildren().add(new Text(""));
+            myVBox.getChildren().addAll(myButtons);
+            myVBox.setAlignment(Pos.CENTER);
+            myVBox.getChildren().add(new Text(""));
+        }
+    
+        private void initializeWelcomeText() {
+            welcomeText = new Text("Welcome to Breakout");
+            welcomeText.setFont(Font.font("Palatino", FontWeight.BOLD, 40.0D));
+            welcomeText.setTextAlignment(TextAlignment.CENTER);
+        }
+    
+        private void initializePaddle() {
+            var paddle = new Image(this.getClass().getClassLoader().getResourceAsStream(PADDLE_IMAGE));
+            myPaddle = new ImageView(paddle);
+        }
+    
+        private void initializeWelcomeScreenBackground() {
+            //        https://docs.oracle.com/javafx/2/layout/builtin_layouts.htm
+            welcomeScreenBackground = new Rectangle(SIZE, SIZE);
+            welcomeScreenBackground.setFill(new LinearGradient(0,0,0,1, true, CycleMethod.NO_CYCLE,
+                    new Stop[]{
+                            new Stop(0, Color.web("#4977A3")),
+                            new Stop(0.5, Color.web("#B0C6DA")),
+                            new Stop(1,Color.web("#9CB6CF")),}));
+            welcomeScreenBackground.setStroke(Color.web("#D0E6FA"));
+        }
+    
+        private void createButtons() {
+            myButtons = new ArrayList<>();
+            playGameButton = new Button("Play Game");
+            playGameButton.setOnAction(e -> {
+                myStageManager.switchScene(new PauseScreen(myStageManager));
+            });
+            myButtons.add(playGameButton);
+    
+    
+            playTutorialButton = new Button("Tutorial");
+            playTutorialButton.setOnAction(e -> {
+                myStageManager.switchScene(new TutorialMode(myStageManager));
+            });
+            myButtons.add(playTutorialButton);
+    
+    
+            cheatKeysButton = new Button("Cheat Keys");
+            cheatKeysButton.setOnAction(e -> {
+                myStageManager.switchScene(new CheatKeyMode(myStageManager));
+            });
+            myButtons.add(cheatKeysButton);
+        }
+    
+        @Override
+        protected void step(double elapsedTime) {
+            resizeWindow();
+        }
+    
+        private void resizeWindow() {
+            welcomeScreenBackground.setWidth(myScene.getWidth());
+            welcomeScreenBackground.setHeight(myScene.getHeight());
+        }
+    }
+  ``` 
+    
+    * This code is my MainScreen class.  The MainScreen displays a paddle, some welcome text and three buttons that lead
+    to the game, the tutorial, and the cheat key screen.  The MainScreen is the first thing that is displayed to 
+    the player when they open the application.  The MainScreen allows you to access all different parts of the game. 
+    I find this code to be readable because the methods are all short, specifically named, and serve small, 
+    well-defined purposes that are clear from the code in the methods as well as the method names.  One confusing 
+    part of this code is when I add empty text to the VBox for the purpose of creating the right spacing because I 
+    couldn't think of a better way to creating the spacing I was looking for. The commits I used in designing this 
+    code were as follows:
+        * Created GamePlayer class that produces blank Welcome Page - Functionality
+        * Welcome Screen now resizeable - Functionality
+        * Added buttons to welcome screen - Functionality
+        * made welcome screen more aesthetically pleasing - Aesthetics
+        * Added a functional cheat key screen created MainScreen and PauseScreen class - Functionality
+        * Extracted MainScreen class - Refactoring
+    * I chose to package these various commits as commits because they contained manageable-sized changes that 
+    advanced the functionality of the code.  These commits also corresponded to natural breaking points in my work 
+    schedule.  I would often come to a decent stopping point and commit before taking a break.
+    
+* Second Piece of Code to Describe:
 
-You can also make lists:
-
-* Bullets are made with asterisks
-
-1. You can order things with numbers.
-
-
-Emphasis, aka italics, with *asterisks* or _underscores_.
-
-Strong emphasis, aka bold, with **asterisks** or __underscores__.
-
-Combined emphasis with **asterisks and _underscores_**.
-
-
-You can put links to commits like this: [My favorite commit](https://coursework.cs.duke.edu/compsci308_2019spring/example_bins/commit/ae099c4aa864e61bccb408b285e8efb607695aa2)
-
+    ```java
+    public class GamePlayer extends Application{
+        public static final int SIZE = 500;
+        public static final int FRAMES_PER_SECOND = 60;
+        public static final int MILLISECOND_DELAY = 1000 / FRAMES_PER_SECOND;
+        public static final double SECOND_DELAY = 1.0 / FRAMES_PER_SECOND;
+    
+    
+        private StageManager stageManager;
+    
+        /**
+         * Initialize the stageManager and switch scenes to load the Main Screen of the application
+         * Establish the animation loop
+         */
+        @Override
+        public void start (Stage stage) {
+            stageManager = new StageManager(stage);
+    
+            stageManager.switchScene(stageManager.getMainScreen());
+    
+            //attach "game loop" to timeline to play it
+            var frame = new KeyFrame(Duration.millis(MILLISECOND_DELAY), e -> step(SECOND_DELAY));
+            var animation = new Timeline();
+            animation.setCycleCount(Timeline.INDEFINITE);
+            animation.getKeyFrames().add(frame);
+            animation.play();
+    
+        }
+    
+        private void step(double secondDelay) {
+            stageManager.getCurrentScreen().step(secondDelay);
+        }
+    
+    }
+  ```
+  * The above code comes from my main class (GamePlayer) and was really key for me to be able to get the animation of
+   the game working.  The code above initializes the StageManager for the project and switches the the MainScreen to 
+   display as a welcome screen when the game is booted up.  The code then establishes the Timeline for the animation 
+   and calls a step function which highlights a key decision I made in my project which was that any screen that was 
+   going to be animated would extend GenericScreen (what is returned from getCurrentScreen()) would override the step
+    function to produce the animation.  This code in my opinion is super simple and easy to understand if someone 
+    understands the role of the StageManager in the program.  It is very few lines of code and features methods with 
+    self-explanatory names such as switchScene and getMainScreen.  The following git commits were associated with the
+     creation of this code:
+     * Created GamePlayer class that produces blank Welcome Page - Functionality
+     * Can switch roots, very sloppy code, must fix, can't animate - Functionality
+     * Animation working with scene change - Functionality
+     * Extracted MainScreen class - Refactoring
+     * added StageManager and GenericScreen classes - Functionality
+     * Working StageManager - Functionality
+     * Refactored and cleaned up GamePlayer and MainScreen classes to improve clarity and readability - Refactoring
+  * I chose to package these various commits as commits because they contained manageable-sized changes that 
+     advanced the functionality of the code.  These commits also corresponded to natural breaking points in my work 
+     schedule.  I would often come to a decent stopping point and commit before taking a break.
+    
 
 ### Design
 
@@ -490,11 +659,8 @@ You can put links to commits like this: [My favorite commit](https://coursework.
     1. Cannot use the balldropper power-up before the previous balldropper has stopped running
     2. There is no mode in which you advance levels sequentially, you are always allowed to choose which level you 
     want to play.
-    3. The design as-is is not very extendable - particularly in the TutorialMode.
+    3. The design as-is is not very extendable - particularly in the TutorialMode, the levels and the power-ups.
       
-  
-
-Here is another way to look at my design:
-
-![This is cool, too bad you can't see it](crc-example.png "An alternate design")
+ 
+ 
 

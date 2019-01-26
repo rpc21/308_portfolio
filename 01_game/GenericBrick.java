@@ -10,10 +10,10 @@ import javafx.scene.image.Image;
  */
 
 /**
- * Abstract class that provides the basic methods for the various brick types
- * Constructs a brick based on its location as specified by top left corner, and an image to represent brick
- * Can handle what happens to itself when it collides with a ball in terms of whether it is replaced or removed
- * Has a point value associated with a collision between the brick and the bouncer
+ * Abstract class that provides the basic methods for the various brick types. Constructs a brick based on its
+ * location as specified by top left corner, and an image to represent brick. Can handle what happens to itself when
+ * it collides with a ball in terms of whether it is replaced or removed. Has a point value associated with a
+ * collision between the brick and the bouncer
  * Subclasses: OneHitBrick, TwoHitBrick, ThreeHitBrick, DangerBrick, PermanentBrick
  * Class can be extended by specifying a new image for the brick, a point value for the brick
  * and how it reacts to a collision with the bouncer. The frequency for which the brick occurs in various difficulty
