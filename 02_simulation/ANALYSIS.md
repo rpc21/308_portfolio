@@ -62,6 +62,8 @@ Design Review
         * Create the XML files for the simulation based on the tag names you specified in the DataFields for this 
         simulation
     * Visualization:
+        * Create a side panel for the simulation
+        * Add the simulation as an option
     
 * Dependencies:
     * The dependencies are clear and easy to find.  The configuration communicates to the simulation via a 
@@ -156,16 +158,23 @@ You can put blocks of code in here like this:
 
 ### Flexibilty
 
-You can also just write some text
+* What makes the code flexible or not?
 
-in separate paragraphs.
+* Describe two features you did not implement:
+    * Good Feature: XML Parsing
+        * The XMLParser hierarchy allows for any type of simulation to be read in using only two subclasses of XMLParserGeneral, one that handles reading in any XML Style file and one that handles reading the XML Simulation file. Since the XMLParser depends on the names of data fields defined in the Simulation’s class, and a consistent set of tag names for fields used across simulations, adding a simulation will not require any new code or changes in any of the XML parsing classes. There are separate methods in each of the parser subclasses that parse each of the individual fields in the file. This way, if any one input type were to be changed, for example initial states is now a map instead of a list of states, then only that one method responsible for parsing initial states would need to change. The hierarchy also reduces redundant code by creating subclasses that handle the 2 categories of XML files expected: the style file and the simulation file.
+    * Bad Feature: Transfer of Information from Front End to Back End
+        * This code is interesting because it shows the pitfalls of the way we transfer information between frontend 
+        to backend.In general, information that is necessary to be reset is organized poorly. Between the simulation panels, the default panel, and the GUIGridOptions, it is difficult to synthesize the information in a manner that can be passed back to Simulation or to Configuration. This requires chains of method calls and non-intuitive fields in particular classes. For example in GUIGridCell, the cell needs a Simulation field in order to pass back a new state for a cell if a user clicks on it. It would be quite difficult to get the grid to display more than two grids or for the two to show different simulations. These two classes combined require GUIGrid, Simulation, GUISimulationPanel, GUIDefaultPanel, SimulationFactory, GUIChart, and GUISimulationFactory. This is evidence that there is something inherently wrong with this design and probably needs to be refactored into the various jobs both accomplish. If there was another source of information (say, a window was keeping track of the order of simulations, or the duration of each simulation), it is not clear how it could be cleanly implemented to pass and store this information.
+
 
 
 ### Alternate Designs
 
-Here is a graphical look at my design:
+Here is a graphical look at a sample (Spreading Fire) of my design:
 
-![This is cool, too bad you can't see it](online-shopping-uml-example.png "An alternate design")
+![This is cool, too bad you can't see it](SimulationCell.png "An alternate design")
+
 
 made from [a tool that generates UML from existing code](http://staruml.io/).
 
