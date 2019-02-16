@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<data media="simulation">
+    <simulationType>Forage</simulationType>
+    <title>The Forage Simulation</title>
+    <author>Dima, Anna and Ryan</author>
+    <rows>20</rows>
+    <columns>20</columns>
+    <edges>basic</edges>
+    <GenerateStatesBy>randomFromPercentages</GenerateStatesBy>
+    <cellStates>
+    </cellStates>
+    <maxFoodPheromones>40.0</maxFoodPheromones>
+    <maxHomePheromones>40.0</maxHomePheromones>
+    <numberOfAnts>30.0</numberOfAnts>
+    <emptyPercentage>0.85</emptyPercentage>
+    <obstaclePercentage>0.15</obstaclePercentage>
+</data>
