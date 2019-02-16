@@ -70,13 +70,38 @@ Design Review
     SimulationFactory. Simulation and Visualization communicate to one another via methods in the Simulation's external 
     API.  Visualization gets information from configuration by creating an XMLParser object.
     
-* One Feature I did not Implement:
-    * Readability:
-    * Encapsulation:
-    * Design:
+* One Component I did not Implement: Configuration (XMLParser)
+    * Readability: The code in the XMLParser is very readable.  The methods are well-named, generally short, and erve
+     specific, well-defined purposes.  An example of this readability is the parseRows method shown below:
+    *  ````java
+    private String[][] parseRows(Element root, int rows, int cols){
+         NodeList cellRows = root.getElementsByTagName(CELL_ROWS_TAG_NAME);
+         String[][] specifiedStates = new String[rows][cols];
+         if(cellRows!=null){
+             for (int i = 0; i < cellRows.getLength(); i++) {
+                 parseColumns(root, specifiedStates, cellRows, i);
+             }
+         }
+         return specifiedStates;
+     }
+    ````
+    * Encapsulation: The XMLParser is well encapsulated.  In relation to the Visualization, the XMLParser could 
+    entirely change how it is implemented and it would not affect visualizatoin at all as long as the XMLParser is 
+    still able to produce Simulations from XMLFiles.  Likewise, the internal workings of the XMLParser do not 
+    specifically matter as long as it can produce the initial states and basic parameters for the Simulation.  
+    Neither the visualization or Simulation access any of the inner workings of the XMLParser and the Parser itself 
+    is essentially a black box - very well encapsulated.
+    * Design: By reading my teammate's code I have thought more about how to really focus on the endpoints of a class
+     and the external APIs of a class to better think about encapsulation.  The XMLParser just needs to provide an 
+     interface to the Visualization of producing a new simulation if given the necessary parameters and to simulation
+      it just needs to pass the initial states and Simulation will take care of the rest.  There is no way to enter 
+      the XMLParser "in the middle" of its job.
 
 * Code Consistency:
-    
+    * The code is generally consistent in its layout, style and naming conventions.  An example of this is the shared 
+    naming conventions between the front end and back end.  For example the hierarchies for the different types of 
+    simulations have consistent naming conventions (SpreadingFireSimulation, GUISpreadingFirePanel, etc.).
+
 
     
 
@@ -138,7 +163,8 @@ You can put links to commits like this: [My favorite commit](https://coursework.
         * Additionally, we possibly could have had a grid hierarchy where each simulation gets a grid that only 
         contains the cells corresponding to that simulation, all of course implementing the necessary methods that 
         get called by visualization to be able to display.
-* Good Feature
+* Good Feature: Grid Implementation
+    *
 * Bad Feature
 
 You can put blocks of code in here like this:
