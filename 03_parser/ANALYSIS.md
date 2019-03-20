@@ -97,7 +97,38 @@ Design Review
      terms of the implementation of the GUI components and how they are able to access the parser.   
 * Reflection on APIs: VisualUpdateAPI
     * The VisualUpdateAPI is easy to use because it as all the possible methods that the back-ed can call on the 
-    front-end in one centralized location
+    front-end in one centralized location.  This is a benefit of using the delegator design pattern to implement the 
+    VisualUpdateAPI.  Since the Delegator class that implements the VisualUpdateAPI serves as the root of the 
+    delegation tree, the implementation of the API is all done with one line methods that simply delegate the method 
+    call to the appropriate class.  This design choice made the implementation of the API simpler but perhaps a 
+    little more difficult to understand because a different programmer would have to trace the call through the path 
+    of delegation.
+    * Having to trace the path of delegation is something that makes the VisualUpdateAPI harder to use because by 
+    nature of the delegator design pattern, the "actual" implementation of the method maybe three or four class down 
+    the delegation chain.  Additionally, since the method calls are initially passed to higher level classes, the 
+    objects on which methods should be called may not necessarily be immediately apparent.  For example, the 
+    setPenColor() method in the the Delegator class is called on a StackedCanvasPane.  It may seem more natural for 
+    this method to be called on a Pen object, however, we did not want the Delegator to keep track of all the 
+    individual pens (or all the individual gui components, for that matter) so we pass the responsibility of setting 
+    the pen color to the StackedCanvasPane then to the specific DisplayView then finally to the Pen that the 
+    DisplayView is holding.  This logic may be hard to follow at first but we believe it is an appropriate use of the
+     delegator design pattern and prevents the Delegator class from filling up with a bunch of small details and 
+     having hundreds of instance variable to keep track of.
+    * This API is encapsulated because its entire implementation is handled in one top level class and the 
+    responsibilities of the individual methods are delegated to smaller and smaller classes.  Hence, changing the 
+    implementation of the API would not have any effect on any of the back-end methods it would only affect the 
+    classes that are currently being updated in the method that is having its implementation changed.
+    * Through the VisualUpdateAPI I have learned about the delegation design pattern and how to pass responsibility 
+    to smaller, more specific classes to make sure that one class is not doing too much and that classes have well 
+    defined responsibilities.  I have also learned about using APIs as a contract in development to help ease the 
+    communication between different parts of the project.  Throughout the project as the back-end was learning about 
+    what commands would have to do and how they would have to update the front-end, one of the easiest ways for us to
+    get the commands implemented was by adding the method that the command would call to the VisualUpdateAPI.  This 
+    API was then used as a conversation starter in terms of what information was needed and available on both sides 
+    so we could determine the parameters for the methods in the API.
+    
+* Code Consistency:
+    
 
 ### Your Design
 
