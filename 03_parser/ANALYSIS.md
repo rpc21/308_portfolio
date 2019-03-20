@@ -128,10 +128,73 @@ Design Review
     so we could determine the parameters for the methods in the API.
     
 * Code Consistency:
-    
+    * The code is mostly consistent between members.  The naming conventions can be slightly inconsistent in 
+    parameter names.  A couple places in Parser such as splitCommand(String s) and addNameChild(CommandNode 
+    currentNode, String s) don't use full names for the parameter names which is what we had done throughout the rest
+    of the program generally uses full words in camel case for parameter names.
+    * Another inconsistency throughout the code is that some instance variables begin with "my" and others do not.  
+    Everyone was somewhat inconsistent with this convention so in some ways we were consistently inconsistent. 
 
 ### Your Design
-
+* High Level Design:
+    * Class Functionality:
+        * GUIDisplay:
+            * The GUIDisplay class is in charge of setting up all the GUI components.  We decided to create classes 
+            for each of our GUI components so the GUIDisplay is mostly just responsible for calling the constructors 
+            of the GUIComponents we had already created and set the preference of.  The GUIDisplay class is also 
+            responsible for organizing the components for batch updates such as language changes.
+        * StackedCanvasPane:
+            * The StackedCanvasPane is responsible for updates to the canvases and turtles.  
+        * DisplayView:
+            * DisplayView is the abstract super class for all the different turtles.  The DisplayView handles updates
+             to the turtles and moving the turtles around the canvas
+        * Palette:
+            * Palettes display an index corresponding to a node and can be used change a turtle icon or color by 
+            using the index of the corresponding palette element
+        * TabExplorer:
+            * Creates tabs that display information about the current state of turtles, pens, variables, methods, etc.
+    * Design Patterns:
+        * Delegation:
+            * In the front-end, there were often at least two ways any element of the display could change. This made 
+            delegation important as having shorter methods reduced code duplication and allowed different parts of the 
+            project to accomplish the same job under different circumstances.  The front-end also used a tree-like 
+            delegation structure where the Delegator class can be seen as the root of the tree and delegates our visual 
+            commands down to classes with more specific functionality to execute the commands.
+        * Observer/Observable:
+            * We used a variation of the observer/observable design pattern by using a LanguageChangeable interface 
+            and grouping the language changeable components together in a list in GUIDisplay so when the language 
+            changed we could notify all the language changeable components (observers)
+    * Advanced Java:
+        * Consumers/Lambdas:
+            * We used consumers and lambdas to aid our encapsulation.  Instead of passing references to entire 
+            objects to another class when classes needed to be able update another class, we would just pass lambdas 
+            to methods that could make the specific update required.
+            * Consumers and lambdas made the communication between gui components much easier and made it so gui 
+            components only had the minimum amount of information necessary about other gui components
+        * Reflection:
+            * We used reflection and properties files to generate our choosers.  The reflection is used instead of a 
+            factory design pattern because it eliminate the need of if-trees.  Also, the use of properties files 
+            makes the design more extensible because if you want to add a new turtle icon you can just add the name 
+            of it to the properties file and it will update all places in the code that use the class name since it 
+            is retrieved from the properties file rather than having to update several hard coded places of the code.
+* Design Checklist Issues:
+    * Magic Numbers:
+        * One of the biggest design checklist issues left in my part of the project is the use of magic numbers in 
+        GUIDisplay to organize the GUI components in the grid pane.  In the future, this should be handled using a 
+        properties file to assign the gui component to its position in the grid pane.  Therefore all positions would 
+        be specified in the same location and it would be very easy to change the position of elements just by 
+        changing the properties file.
+    * DisplayView too many methods:
+        * The DisplayView class has too many methods.  This is likely a result of the number of overloaded 
+        constructors that the DisplayView has as well as its role in the chain of delegation.  DisplayView could be 
+        refactored to have a DisplayViewDelegator object that will handle the delegation functionality of the 
+        DisplayViewClass.  This would also help with our design issue that DisplayView is used to display non-moving 
+        images in the palettes as well as the moving images in the canvas.  If we split up the class into two 
+        different kinds of display views (static and moving) they would each have more specific purposes and the 
+        class would be smaller.
+    * 
+                
+                    
 
 ### Flexibilty
 
