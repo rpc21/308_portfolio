@@ -192,10 +192,36 @@ Design Review
         images in the palettes as well as the moving images in the canvas.  If we split up the class into two 
         different kinds of display views (static and moving) they would each have more specific purposes and the 
         class would be smaller.
-    * 
-                
-                    
+* Good Feature: Palette/PaletteElement
+    * The Palette and PaletteElement classes are probably the best designed part of the project that I worked on.  
+    The classes use Java generics to be able to handle many different kinds of palettes.  I initially wrote a Palette
+    abstract super class and then created separate subclasses for the TurtlePalette and ColorPalette.  I then 
+    realized that the two palettes had very similar code and purposes but different types.  When we learned about 
+    generics in class I saw the Palettes as a great place to be able to use the generics.  After implementing the 
+    generics version of the palette I was able to get rid of two classes and my code became much more easily 
+    extensible.  Now to add a new kind of palette, instead of extending from an abstract class and changing the code
+    to be able to handle the type of palette, I can just create a new typed palette in the GUIDisplay of whatever 
+    node type I want and all the functionality will already be implemented.
+    * The dependencies for this class are that when it is instantiated you have to keep track of the type of Palette 
+    you created so the methods you use use the correct types.
+    
+* Bad Feature: DisplayView
+    * As mentioned above, the DisplayView has too many methods and too many constructors indicating that it has too 
+    much responsibility and is being used too generally.
+    * The number of methods and responsibilities the DisplayView has could be decreased by creating a 
+    DisplayViewDelegator that handles the delegation responsibilities of the DisplayView.
+    * The number of constructors could be decreased if we separated DisplayView into two different kinds of 
+    DisplayViews, a static (non-moving) one for display in the palettes, and a moving one that runs on the canvas and
+    can draw on the canvas, etc. 
+        * A potential design for this would be to create the non-moving DisplayView as the top level super class and 
+        then have the moving DisplayView extend from it seeing as it would have extended functionality (being able to
+        move around and draw on the canvas)
+    * Another issue with the DisplayView class is that the subclasses are essentially containers that just specify 
+    the image for that icon but keep all the other functionality the same. It may be better to change from icon to 
+    icon using a setIcon method or changeIcon method rather than creating a new display view and copying the state.  
+    This would save us from a lot of bookkeeping and would prevent us from using so many container subclasses.
 
+   
 ### Flexibilty
 
 
