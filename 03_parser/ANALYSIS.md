@@ -63,7 +63,8 @@ Design Review
         * Add properties file to languages folder in resources 
         * Add the new language to the front-end Languages properties file
     * New Argument Syntax
-        * In order to add in a new type of syntax, add the regular expression with a defining key into the Synax properties file. 
+        * In order to add in a new type of syntax, add the regular expression with a defining key into the Syntax 
+        properties file. 
         * In order to add an additional way to call a method, add “|” and the new way to call each method. 
     * New Exception
         * Add in the exception and have it extend InvalidInputException
@@ -222,8 +223,58 @@ Design Review
     This would save us from a lot of bookkeeping and would prevent us from using so many container subclasses.
 
    
-### Flexibilty
+### Flexibility
+* Design Flexibility:
+    * There are several design patterns and design choices we made to enhance the flexibility of the design. One of 
+    these design choices was using the command design pattern for our command nodes.  This design choice makes it 
+    easy to add new nodes because they just need to extend the CommandNode abstract superclass, implement the 
+    evaluate method and be added to the appropriate properties files.  
+    * Similarly, adding visual commands is one of the most extensible parts of the project.  To add a visual command 
+    one only has to create a subclass of VisualCommand and either conform the call on the VisualCanvasAPI object to 
+    be one of the calls already in the API or add an appropriate method to the API and have the Delegator class 
+    implement it by delegating to the appropriate GUI component.
+    * Adding various GUI elements such as a new kind of palette or a new chooser is also very extensible.  Our use of
+    generics to create the palettes makes it so all that someone would have to do to add a new kind of palette is 
+    just instantiate it with the type of node they want and start adding elements.  Likewise for the chooser, they 
+    would have extend the abstract PaletteChooser class, specify a properties file to use for the chooser, and 
+    provide a consumer for what to do with the selection.
+    * The parser is also very extensible to adding new commands of the same types that we already have (just need to 
+    specify the number of arguments for that command and make sure it is in the correct properties files).  The 
+    parser can also easily add commands of a new syntax by specifying the regular expression and defining key in the 
+    Syntax properties file.
 
+* Feature I did not Implement 1: Command Nodes
+    * This code is interesting because it is so simple (such few methods and few lines of code) yet it carries so 
+    much of the functionality of our program because it implements all the possible commands that can be run by the 
+    user.
+    * The main class used to implement this feature is the CommandNode class which is an abstract superclass that 
+    defines the default properties of a CommandNode as well as the default functionality. CommandNode has many 
+    subclasses that extend from it to implement the concrete commands.  The commands/Arguments property file is 
+    required for the class to be able to get the maxChildren.
+    * The ways command nodes are created and evaluated are closed to modification.  Command nodes are created using 
+    reflection on a string received from the parser meaning nothing needs to be changed in a factory for the addition
+    of a new kind of command node.  Also, all command nodes are evaluated by calling their evaluate method meaning 
+    when new subclasses of command nodes are added, no new methods or logic need to be able to added to evaluate the
+    commands, the evaluate command just needs to be implemented.
+    * One assumption I can see is 
+    that there is the assumption that the children of the node will come after the command node in the tree rather 
+    than before it.  This assumption assumes that the parser is creating the tree so that the children are in the 
+    correct position. A second assumption in the CommandNode implementation is that there will be a known number of 
+    children before it is evaluated.  This assumption caused us problems when we were trying to implement the 
+    extension that allows for any number of arguments such as fd 10 20 30 40.
+    * Changes to the number of children of a command node could be hard for this design to handle when it comes to 
+    flexibility. For example, if a command's number of arguments changes based on when or where it is called relative
+    to other commands, our code would not be able to handle this because it reads in the number of children from a 
+    properties file so it is set and cannot be changed dynamically.  Other than in this case, as mentioned before, 
+    the CommandNode implementation makes it very easy to add new commands.
+
+
+* Feature I did not Implement 2: Parser
+    * This code is interesting to me because it does so much of the logic of the SLogo program and is so important to
+    its overall functionality yet it is very few lines of code.  I am also interested in this code because the 
+    parsing always seemed like an interesting challenge to me and I am interested in how the regular expressions are
+    used to parse in an intelligent way instead of using a mess of logic.
+    * 
 
 ### Alternate Designs
 * Immutable States and Moves
