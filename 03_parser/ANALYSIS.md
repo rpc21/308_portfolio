@@ -97,36 +97,7 @@ Design Review
      the constructors for GUI components simpler (require fewer parameters), but creates a sort of back channel in 
      terms of the implementation of the GUI components and how they are able to access the parser.   
 * Reflection on APIs: VisualUpdateAPI
-    * The VisualUpdateAPI is easy to use because it as all the possible methods that the back-ed can call on the 
-    front-end in one centralized location.  This is a benefit of using the delegator design pattern to implement the 
-    VisualUpdateAPI.  Since the Delegator class that implements the VisualUpdateAPI serves as the root of the 
-    delegation tree, the implementation of the API is all done with one line methods that simply delegate the method 
-    call to the appropriate class.  This design choice made the implementation of the API simpler but perhaps a 
-    little more difficult to understand because a different programmer would have to trace the call through the path 
-    of delegation.
-    * Having to trace the path of delegation is something that makes the VisualUpdateAPI harder to use because by 
-    nature of the delegator design pattern, the "actual" implementation of the method maybe three or four class down 
-    the delegation chain.  Additionally, since the method calls are initially passed to higher level classes, the 
-    objects on which methods should be called may not necessarily be immediately apparent.  For example, the 
-    setPenColor() method in the the Delegator class is called on a StackedCanvasPane.  It may seem more natural for 
-    this method to be called on a Pen object, however, we did not want the Delegator to keep track of all the 
-    individual pens (or all the individual gui components, for that matter) so we pass the responsibility of setting 
-    the pen color to the StackedCanvasPane then to the specific DisplayView then finally to the Pen that the 
-    DisplayView is holding.  This logic may be hard to follow at first but we believe it is an appropriate use of the
-     delegator design pattern and prevents the Delegator class from filling up with a bunch of small details and 
-     having hundreds of instance variable to keep track of.
-    * This API is encapsulated because its entire implementation is handled in one top level class and the 
-    responsibilities of the individual methods are delegated to smaller and smaller classes.  Hence, changing the 
-    implementation of the API would not have any effect on any of the back-end methods it would only affect the 
-    classes that are currently being updated in the method that is having its implementation changed.
-    * Through the VisualUpdateAPI I have learned about the delegation design pattern and how to pass responsibility 
-    to smaller, more specific classes to make sure that one class is not doing too much and that classes have well 
-    defined responsibilities.  I have also learned about using APIs as a contract in development to help ease the 
-    communication between different parts of the project.  Throughout the project as the back-end was learning about 
-    what commands would have to do and how they would have to update the front-end, one of the easiest ways for us to
-    get the commands implemented was by adding the method that the command would call to the VisualUpdateAPI.  This 
-    API was then used as a conversation starter in terms of what information was needed and available on both sides 
-    so we could determine the parameters for the methods in the API.
+    
     
 * Code Consistency:
     * The code is mostly consistent between members.  The naming conventions can be slightly inconsistent in 
@@ -274,11 +245,99 @@ Design Review
     its overall functionality yet it is very few lines of code.  I am also interested in this code because the 
     parsing always seemed like an interesting challenge to me and I am interested in how the regular expressions are
     used to parse in an intelligent way instead of using a mess of logic.
-    * 
+    * This feature is implemented using the Parser class, CommandFactory, UserCommand, UserCreated and Validator.  
+    The important resources for the parser are Exceptions, PackageLocation and Parameters properties files as will as
+    the PropertiesKeys txt file.
+    * The parser code is closed to adding new commands of similar types to the commands that are already accepted.  
+    The commands simply have to be added to the properties files and the parser will be able to handle them.  The 
+    implementation details of what kind of command is being created is somewhat encapsulated.  There is some logic to
+    detect user-created commands, method declarations, and when nodes need the name which would ideally be handled 
+    with some kind of abstraction so we could avoid detecting each of these different situations separately, but the 
+    differences in these types of commands warrant the need for this logic, in my opinion.  Along the same lines, the
+    parser code is not very flexible when it comes to allowing new possibilities such as users defining their own 
+    methods, etc.  Another area in which the lack of flexibility in the parser hurt us was in trying to implement the
+    extension about allowing commands with an unknown number of inputs such as fd 20 30 40 60 because it was not in 
+    the format we were expecting.
+    * As mentioned above, the code is easily extensible when adding commands of similar types to the ones already 
+    created but not as extensible when adding completely new ways for the user to interact with the program.
+    
 
 ### Alternate Designs
-* Immutable States and Moves
-* GUIDisplay implementing VisualUpdateAPI
+* Success of Original Design in Handling Extensions
+    * Handling the new commands that had to be created
+        * We were able to handle the addition of new commands easily because the command design pattern we used and 
+        the abstractions and hierarchies we created in terms of CommandNodes, TurtleCommands, and VisualCommands were
+        able to really easily accommodate the addition of new commands.  To add new command nodes we simply had to 
+        extend the appropriate abstract class, add the command properties to the correct properties files and 
+        implement any additions to the VisualCanvasAPI if applicable.  The command design pattern and the command 
+        node hierarchies were definitely one of the best designed parts of the project.
+    * Handling Graphical Update to Turtle on Front-End:
+        * We were able to handle this addition rather easily by creating commands in the front-end using the 
+        appropriate string concatenations and passing these commands to the parser to run through the background. 
+        Although this was rather easy to implement, it is likely not the best design.  In some sense we are using the
+        parser as a controller for the front end to be able to update the state of the back-end but it requires the 
+        front-end to know a lot of information about commands and hinges on what feels like rather risky string 
+        concatenations and hard-coding of commands.  It would perhaps be better to have a more traditional controller
+        (rather than the parser) that is able to communicate the front-end changes to the back-end so the program is 
+        not as reliant on the parser and the front-end does not require as much knowledge or logic involving the 
+        commands.
+        * The dependency of having to update certain state properties on the back-end to allow for undoing commands 
+        also made it harder for the front-end to simply communicate to itself seeing as most updates had to go 
+        through the back-end.
+    * Challenging Extensions:
+        * We decided to not implement recursion, grouping, unknown number of commands, and animation.  We decided to 
+        prioritize functionality and cleaner code over going for the maximum amount of functionality and thought that
+        doing a good job implementing most of the extensions would be better than doing an okay job implementing all
+        of the extensions.
+
+* Design Decision 1: Immutable States and Moves vs. VisualUpdateAPI
+    * We spent a very long time discussing whether we should pass information from the back-end to the front-end 
+    through immutable turtle state and immutable pen-states or through the VisualUpdateAPI.  
+    * At first we thought it 
+    would be easier to just pass the front-end the entire state of each turtle from the back end and the front-end 
+    could query that turtle state to update the display of the front-end turtles.  This solution has the benefit of 
+    making communication easy between front-end and back-end and it ensures data consistency because front-end and 
+    back-end are consistently passing the entire state of program to each other.  Drawbacks of this approach include 
+    the fact that we would basically be passing a container class back and forth that contains way more information 
+    than is necessary to make the updates.  For example, if only the x-position of a turtle is changing, it seems 
+    like overkill to pass an entire turtle state to the front-end.  Additionally, the process of iterating through 
+    the turtle state and looking for what has changed appeared that it would lead to repetitive, redundant code that 
+    we were trying to avoid. 
+    * The VisualUpdateAPI, on the other hand allowed us to have the back-end directly call methods on the front-end, 
+    only passing the information necessary to make the update, leaving the specific implementation of how the update 
+    is made to the front-end.  This approach gave us what felt like a better division of responsibility between 
+    front-end and back-end.  Using the VisualUpdateAPI allowed the back-end to do the logic of determining how things
+    needed to be updated, then passed only the relevant information to the front-end to implement the update.  The 
+    VisualUpdateAPI also allowed us to use interfaces effectively to establish a contract between the front-end and 
+    back-end as to what methods would be available for the back-end to call on the front-end.  A disadvantage of the 
+    VisualUpdateAPI is that it is rather long and requires that one class implement a lot of methods that can have a 
+    wide arrange of effects.  The counteract this downside of the VisualUpdateAPI, we created a Delegator class and 
+    used a delegator design pattern to break up implementation of the API into more appropriate, specific classes.
+* Design Decision 2: Role of GUIDisplay
+    * Throughout the project we knew that GUIDisplay was an important class that had a lot of responsibility. 
+    GUIDisplay is the class that is in charge of setting up the entire GUI, including all the GUI components.  At 
+    times it was also the class that implemented the VisualUpdateAPI.  In the beginning it made sense for the GUI to 
+    implement the VisualUpdateAPI because it had access to all the GUI components and could delegate appropriately.  
+    However, it quickly became clear that between initializing all the GUI components and implementing the 
+    VisualUpdateAPI, the GUIDisplay class had too much responsibility and was turning into a God class.  To try to 
+    eliminate some of the responsibilities of GUIDisplay there were several steps we took.  First, we decided to make
+    classes for each of the GUI components.  This allowed us to set the specific preferences for each component in 
+    their constructor so GUIDisplay would just have to call the constructors and add the components to the grid pane 
+    adn would not have worry about setting preferred height and text, etc.  A second change we made was to create 
+    interfaces for LanguageChangeable components and CommandExecutable components.  This allowed GUIDisplay to just 
+    maintain collections of these components and iterate through them calling the appropriate methods on each object,
+    rather than having to implement all the logic and all the updates for a language change.  Finally, to reduce the 
+    number of methods and responsibilities in GUIDisplay, we created a Delegator class than handled the 
+    implementation of the VisualUpdateAPI.
+    * Throughout the project the roles of GUIDisplay changed drastically from originally being a sort of God class, 
+    handling many responsibilities because it could access all the GUI components easily, to being more of an 
+    initializer and an entry point by the end of the project.  I feel that the final role of GUIDisplay is much 
+    better design than its initial role because it follows the principles of Object Oriented Design of letting 
+    objects do things such as change language or run commands for themselves instead of one class doing those things 
+    on the objects.  Additionally, our final design follows the single responsibility principle where GUIDisplay is 
+    simply in charge of initializing all the GUI components, rather than the multiple responsibilities of setting up 
+    GUI components, implementing the VisualUpdateAPI, etc. 
+    
 
 ### Conclusions
 
