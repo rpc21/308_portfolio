@@ -407,4 +407,6 @@ Design Review
         * I need to stop hard-coding string and telling myself I will read them in from a properties file later.  I 
         need to just start by reading in from properties files so I will be sure it gets done and it makes the code 
         less dependent on strings.
+        
+Code Masterpiece: Palette, PaletteTabExplorer, PaletteElement
 
