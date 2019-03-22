@@ -93,10 +93,35 @@ Design Review
     headings so it would be clear what is going to be affected by a method call.
     * One way in which our dependencies are less apparent is in our use of two-step constructors in the front-end.  
     We decided to establish all the GUI components first and make them visually appear on the screen and then go back
-     through the relevant components to give them access to the parser and to set their languages.  This choice made 
-     the constructors for GUI components simpler (require fewer parameters), but creates a sort of back channel in 
-     terms of the implementation of the GUI components and how they are able to access the parser.   
-* Reflection on APIs: VisualUpdateAPI
+    through the relevant components to give them access to the parser and to set their languages.  This choice made 
+    the constructors for GUI components simpler (require fewer parameters), but creates a sort of back channel in 
+    terms of the implementation of the GUI components and how they are able to access the parser.   
+* Reflection on APIs: ITurtle API
+    * The ITurtle API is used to abstract whether a method is being run on a collection of turtles (Bale) or on a 
+    single turtle (Turtle) in the back-end.  This interface is used to implement an iterator design pattern.  The 
+    interface is also used to hide the implementation of specific Turtle objects from the CommandNode objects.  
+    CommandNode objects are only given a Bale as a parameter to the method which keeps the CommandNodes from having 
+    to know about specific Turtle objects.
+    * Ease of Use: 
+        * The interface is easy to use because none of the methods take any parameters.  The fact that the 
+        methods don't take any parameters also makes reflection easier.  One way in which this API could be misused is 
+        because some of the methods return ints while other methods return doubles.  This can cause problems if the 
+        results are used in calculations later if ints and doubles are intermixed in ways they are not supposed to be.
+    * Encapsulation:
+        * This design encapsulates the logic about active turtles and inactive turtles and which turtles get updated 
+        when commands are run.  The feature is easily extensible and very accommodating to adding new commands along 
+        the lines of tell, ask and askwith because only Bale would need ot add a method so the proper turtles would 
+        respond to the command.
+    * Learning About Design:
+        * The ITurtle API is very similar to the composite design pattern we learned about in class that masks 
+        whether a command is affect a single object or a collection of objects by both the single object and 
+        collection of object implementing the same interface.  The collection version (Bale) does not have to be 
+        concerned with the specific implementation of methods in the Turtle but can iterate through different subsets
+        of Turtles very easily invoking the appropriate methods on each turtle.  This interface is actually a slight 
+        variation of the composite design pattern and actually an iterator design pattern in some sense because 
+        CommandNodes have access to the iterator version of the interface rather than the more general interface.  
+        Looking over this API was really interesting for me because it allowed me to see a concrete implementation of
+        the composite design pattern which cleared up lingering questions I had about how it could be used effectively.
     
     
 * Code Consistency:
@@ -340,5 +365,46 @@ Design Review
     
 
 ### Conclusions
-
+* Best Feature: Design of CommandNodes
+    * The CommandNodes are the best designed feature of the project because of their use of abstractions, their 
+    extensibility, and how the VisualCommands work with the VisualUpdateAPI.  The CommandNodes have a well 
+    thought-out hierarchy and use abstract classes effectively to reduce the duplicated code, leverage commonalities 
+    between commands, and make our code more closely align with the open-closed principle since we can easily add new
+    commands by extending the appropriate abstract class (open for extension) without having to modify our code 
+    that handles CommandNodes because the abstractions tell us what to expect from a CommandNode (closed to 
+    modification).  Additionally, the CommandNodes implementation of the command design pattern where each node has 
+    an evaluate() method and we just keep calling evaluate taught me a lot about the command design pattern and how 
+    to effectively use abstractions to be able to make your code that interacts with the CommandNodes as general as 
+    possible and not have to deal with any if-statements.  Finally, the VisualCommands do a great job of communicating 
+    between the back-end and front end.  The back-end defines a VisualUpdateAPI and exports it to the front-end.  
+    The 
+    visual commands take in an object
+    that implements the VisualUpdateAPI so and will call the appropriate method.  Implementing this part of the 
+    project taught me a lot about how APIs can be used as a contract for development and as a means of communication 
+    between front-end and back-end.
+* Worst Feature: Design of the Tabs/TabExplorers
+    * The Tabs/TabExplorers are the worst designed part of the project because they do not use inheritance correctly.
+    The top level in our Tab hierarchy (SLogoTab) has too much functionality so some classes that use a SLogoTab 
+    have tabs that can in theory perform actions such as send something to the command line when it is not 
+    necessary for that tab to be able to do that.  It would have been better design to create a more basic tab at the
+    top level of our hierarchy for some of the tab explorers to implement and then the subclasses that extend the 
+    basic tab can have extended functionality as appropriate.  Another issue with the tabs implementation is that it
+    requires the GUIData class which is essentially a container and a much less effective way of distributing 
+    information between gui components than lambdas. By reading over the tab class I have learned the be less afraid 
+    of taller inheritance hierarchies and that it makes sense to have more and more powerful versions of a class but 
+    to not expose that power to other classes that do not need it.
+* Looking Forward:
+    * Keep Doing:
+        * I should keep looking to use design patterns to solve the design problems we encounter.  Whenever we 
+        stopped to look at design patterns to see if we could find one that addresses our particular issue, we were 
+        generally able to find an effective design pattern that would often turn a complicated part of our project 
+        into one of the better designed parts.
+    * Do Differently:
+        * I need to look to break up classes further.  Some of the classes such as DisplayView, GUIDisplay and 
+        StackedCanvasPane became too multi-purposed and too long.  When I did look to break up classes I think it 
+        greatly improved my code but in the future I should look to break up classes more often.
+    * Stop Doing:
+        * I need to stop hard-coding string and telling myself I will read them in from a properties file later.  I 
+        need to just start by reading in from properties files so I will be sure it gets done and it makes the code 
+        less dependent on strings.
 
