@@ -596,5 +596,32 @@ parts of th program and how maximum flexibility in one area can lead to really h
  
 #### Reflection on Myself over the Semester:
 
+* Biggest strength as a coder/designer
+    * My biggest strength as a coder/designer is that I am able to think ahead to how the code is going to look to 
+    evaluate different design decisions. For example, when planning out the final project and deciding between ECS 
+    and inheritance based design I warned my teammates of the class-checking that would have to occur in the ECS 
+    architecture because I was able to think ahead to what the filtering system would look like and how the code 
+    would look when actually implementing that design decision.
+* My favorite part of coding/designing is refactoring
+    * I really enjoy refactoring. I like to consider the different ways code can be organized and weigh the pros and 
+    cons of different organizational styles in terms of functionality, simplicity, readability and maintainability. 
+    Refactoring is an interesting challenge to me and I really enjoy how it really bridges the gap between design and
+    writing code and you can see the true effects of different design decisions in how code can be refactored. I 
+    like how tangible refactoring makes design.
+* Two specific things I have done this semester to improve as a programmer
+    * Asked for help - I went to office hours almost every week to get different input on my design decisions and my 
+    code to learn from the TAs about good practices and to help me consider different approaches I maybe had never 
+    thought of before. I would also ask for help from my teammates and try to get feedback and second opinions on my 
+    code to make it as good as possible.
+    * Did the readings/attended class - From the first week of this course I saw how valuable the lectures and the 
+    readings were for introducing design concepts and important things to consider as a programmer such as security, 
+    the ethics of programming, teamwork, and design so I made it a point to attend every lecture and do every reading
+    to try to learn as much as possible from the provided resources of how to improve as a programmer. In each 
+    project, I made it a point to incorporate the concepts we had learned in class and in the readings when 
+    appropriate. In vooga, for example, I used prepared statements to **enhance the security** of our database and 
+    protect against **SQL Injection Attacks**. I also incorporated concepts of **Test Driven Development**, making a 
+    suite of junit tests for my methods to make sure my teammates and I agreed upon how methods would work, and to 
+    make refactoring much safer and easier because I would have the reassurance that the methods still work as 
+    expected. 
 
 
