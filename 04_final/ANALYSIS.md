@@ -38,7 +38,7 @@ our authoring environment and in the user profile features of our game center.
     descriptions about the games, rate the games, see high scores and have well developed user profiles. The center 
     is dependent on the runner to launch the games and is powered by the data module that stores all the information 
     that is displayed in the center. The relationship between the center and data modules is the best I have ever 
-    seen **module and view** work together in any of the projects I have done in this class. The center can simply 
+    seen **model and view** work together in any of the projects I have done in this class. The center can simply 
     call variations of put and get on the data module to add to and query the model and then takes this information 
     and displays it in a very elegant way.
     * The game center can support any type of game easily. The genre of game makes no difference whatsoever to the 
@@ -236,9 +236,31 @@ tables can be **encapsulated** so only that querier knows about it. This class h
 
 This feature is requires the abstract superclass `Querier` and its subclasses as well as the `DatabaseEngine` and 
 its connection to the database. The inheritance allows for the removal of a lot of **duplicated code** when it comes 
-to closing the statements.
+to closing the statements and enhances the **readability** of the code by placing all the database accesses in their 
+own distinct sections of the code.
 
+The main issue that I wrestled with when designing this aspect of my code was how to manage all the databases 
+accesses in terms of where do I store the strings used in the sql queries, where do I store the information about the
+ database schema and table structures, and how do I make sure I manage the resources carefully to be sure to close 
+ all resources I open.
 
+The main assumption that affects this part of the code, and the data module as a whole is that the game name + author
+name will be unique. One author cannot make two games of the same name.
+
+#### One Bad Feature: DataManager and DatabaseEngine class sizes
+One poor design decision was to have the DataManager class be the main point of entry for other modules to  
+access the Data module and to have the DataManager implement the entire API, making it close to a **monolithic class**. 
+This decision was made to ease  
+communication with the other modules by only having to familiarize teammates with one class name to use with data and
+it made a lot of sense when we were originally just saving and loading games. However, when we began to expand what  
+we stored to include images, sounds, user information and ratings, the role of the DataManager got too large and 
+would have been better to split up into separate kinds of data managers for each of the different assets. One key 
+advantage of this design, however, is that DataManager entirely encapsulates away the implementation decisions of how
+we stored our data. Between the first and second sprint we switched from using only the file system to using a 
+database and it did not affect anyone else's code.
+
+Again, the main assumption that affects this part of the code, and the data module as a whole is that the game name + 
+author name will be unique. One author cannot make two games of the same name.
 
 ### Flexibility
 
