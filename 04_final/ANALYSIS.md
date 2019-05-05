@@ -456,9 +456,145 @@ Preference:
 * I would have preferred the inheritance based design because it would be easier for the authoring environment and 
 for the user and would leverage many of the good coding practices we have learned this year such as utilizing 
 **polymorphism** effectively as well as creating useful **abstractions**.
-* Additionally there would be much less type/class checking and casting because it would all be handled by the 
+* Additionally, there would be much less type/class checking and casting because it would all be handled by the 
 abstractions and polymorphism.
   
 
 ### Conclusions
+#### Best Feature of the Project's Design: Internal Communication in Authoring Environment
+
+Description of Feature:
+
+* Authoring created its own version of an Entity, a Level, and Events with JavaFX **binding/listening** features that 
+would
+not have been serializable had they existed in the same classes other modules used to run games. These, along with 
+some classes to manage them, acted as the backend of our authoring module. This backend enabled us to use binding to 
+update entity properties in multiple areas of the UI as new instances were instantiated and their characteristics 
+were changed. The graphics directly presented to the author were bound to this backend such that they could be edited
+and updated appropriately. Once the user chooses to save, the front-end version of the entities, levels, and events 
+are translated into the Entity, Level, and Events that are exported from the engine. This translation removes all 
+JavaFX and allows for the serialization of the complete Game Object. Similarly, there are mechanisms to translate a 
+saved game back into a version that is editable by the authoring frontend.
+
+* I chose this feature to discuss because I was really impressed with how **effectively** the authoring environment 
+**communicated internally** using **property binding** and **event listening**. When I worked on the front end of 
+SLogo I realized how difficult it can be to make sure all parts of the front end are always in sync with each other 
+and that was on a much smaller scale so I was very impressed with how our authoring environment was able to keep 
+consistency between all the different components so well.
+
+What I learned:
+
+* From reading over this code, I learned a lot about front end design and how to use **listeners** and **property 
+binding** to effectively communicate between front end component to make sure the front end is always in sync with 
+itself. By reading the `GameTranslator` class I also learned how to compile information in a logical way in the front
+end of a program. One problem that is easy to run into in front end design is that different pieces of information, 
+even information that appears on the same screen can be very far away from each other in terms of the logic of the 
+code. From reading over the authoring environment code, I saw how it is possible to aggregate information from many 
+distinct parts of the code base together in a logical and clean way, using **listeners**, **property binding** and 
+the **propagation system**.
+
+#### Worst Feature of the Project's Design: Actions and Events in Authoring
+From reading over the code, it appears to me that the worst feature remaining in our code is how the authoring 
+environment handles the creation of events and actions by the user. This, however, is not the fault of the authoring 
+environment, this is a result of the ECS design of the engine, putting the responsibility of creating actions and 
+events on the user and the authoring environment, and the inconsistencies in the constructors of the engine code.
+ 
+````java
+package events;
+import engine.external.actions.Action;
+import engine.external.actions.NumericAction;
+import engine.external.conditions.Condition;
+import engine.external.conditions.ConditionType;
+import ui.UIException;
+import voogasalad.util.reflection.Reflection;
+import java.util.ResourceBundle;
+
+public class EventBuilder {
+
+    private static final String ERROR_PACKAGE_NAME = "error_messages";
+    private static final String ACTION_PACKAGE_PREFIX = "engine.external.actions.";
+    private static final String COMPONENT_PACKAGE_PREFIX = "engine.external.component.";
+
+    private static final String ACTION_KEY = "Action";
+    private static final String COMPONENT_KEY = "Component";
+
+    private static final ResourceBundle myErrors = ResourceBundle.getBundle(ERROR_PACKAGE_NAME);
+    private static final String ERROR_ONE_KEY = "InvalidCondition";
+    private static final String ERROR_TWO_KEY = "InvalidAction";
+
+
+    public Condition createGeneralCondition(String componentName, String comparatorDisplayName, String conditionValue) throws UIException{
+        ConditionType myConditionType = ConditionType.valueOf(comparatorDisplayName.replaceAll(" ",""));
+        String conditionClassName = myConditionType.getClassName();
+        try{
+            Class componentClass = Class.forName(COMPONENT_PACKAGE_PREFIX + componentName + COMPONENT_KEY);
+            Double value = Double.parseDouble(conditionValue);
+            return  (Condition)Reflection.createInstance(conditionClassName,componentClass,value);
+        }
+        catch(Exception nonNumericCondition){
+            try {
+                Class componentClass = Class.forName(COMPONENT_PACKAGE_PREFIX + componentName + COMPONENT_KEY);
+                return (Condition)Reflection.createInstance(conditionClassName,componentClass,conditionValue) ;
+
+            }
+            catch(Exception e2) {
+                UIException myException = new UIException(myErrors.getString(ERROR_ONE_KEY));
+                myException.displayUIException();
+            }
+        }
+        throw new UIException(myErrors.getString(ERROR_ONE_KEY));
+    }
+
+
+    public Action createGeneralAction(String componentName, String modifierName, String conditionValue) throws UIException{
+        String actionClassName = ACTION_PACKAGE_PREFIX + componentName + ACTION_KEY;
+        try {
+            Action createdAction = (Action) Reflection.createInstance(actionClassName, NumericAction.ModifyType.valueOf(modifierName),
+                    Double.parseDouble(conditionValue));
+            return createdAction;
+        }
+        catch(Exception nonNumericAction){
+            try {
+                Action createdAction = (Action) Reflection.createInstance(actionClassName,
+                        Double.parseDouble(conditionValue));
+                return createdAction;
+              }
+            catch(Exception nonComponentAction) {
+                try {
+                    Action createdAction = (Action) Reflection.createInstance(actionClassName, conditionValue);
+                    return createdAction;
+                }
+                catch (Exception e){
+                    UIException myException = new UIException(myErrors.getString(ERROR_TWO_KEY));
+                    myException.displayUIException();
+                }
+            }
+        }
+        throw new UIException(myErrors.getString(ERROR_TWO_KEY));
+
+    }
+
+}
+````
+
+The EventBuilder class is just a small example of how difficult it is for the authoring environment to work with the code 
+inconsistencies provided by the engine's actions, conditions and events.
+
+The engine was designed to be **maximally flexible and extensible**. The engine provides components which are 
+essentially variable holders to the the authoring environment and the authoring environment attaches these components
+to an entity. This design put a lot of work and pressure on the authoring environment to ensure that each entity had
+all the necessary components to carry out its actions. This design introduced many **back-channel dependencies** to
+our project and prevents the authoring environment from being **closed to modification**. Whenever the engine 
+decides to add a new kind of collision, action or event, it is a lot of work for the authoring environment because 
+many of these classes have different constructors and different requirements that are **non-intuitive** making the
+engine api **easy to misuse** and **not easily exstensible**.
+
+What I learned:
+* From reading over this code, I realized how profoundly the design of one part of the program can affect the other 
+parts of th program and how maximum flexibility in one area can lead to really hard to manage and bad code in another
+ area of the project that relies on it.
+ 
+#### Reflection on Myself over the Semester:
+
+
 
