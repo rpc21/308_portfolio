@@ -144,9 +144,103 @@ case the engine in the runner when they both use and are expecting the same conc
 
 ### Your Design
 
+#### High level design goals and API
+The high level goal of the data module was to provide an api to the other modules for data management whether it is storing images, sounds, user information, or game information. The data module also was designed to encapsulate the details of file storage, and data transformations such as serialization away from the other modules so they do not need to worry about the backend implementation of how data is stored and accessed. Furthermore, the data module was intended to be our utility module so we had the goal of making it as general as possible so other teams could easily plug the module into thier project and be able to use the same data management tools. 
+
+The data module's api is essentially a series of puts and gets (saves and loads) that allow the other modules to save information they want saved and be able to retrieve it later. The authoring module would use the data module to save and load games, sounds and images to our database.  The launcher used the data module to manage users and their passwords. The data module allowed the launcher to create new users and verify their login information. The game center loads in all game information (GameCenterData) objects from the data module, saves and loads all user profile information such as user bios and profile pics using the data modules and creates and displays comments, ratings, and high scores using the data module. The runner depends on the data module for loading in a new game or checkpoint, saving the game or checkpoint, and updating high scores. Finally, the engine uses the data module to load in the images and audio files used in the game.
+
+#### How classes relate to each other
+Before refactoring, the DataManager class is the entry point of the data module for the other modules.  The 
+DataManager class implements the data external api and contains all the necessary public methods for the data module.
+This decision was made to ease communication with the other modules by only having to familiarize teammates with one 
+class name to use with data and it made a lot of sense when we were originally just saving and loading games. 
+However, when we began to expand what we stored to include images, sounds, user information and ratings, the role of
+the `DataManager` got too large and would have been better split up into separate kinds of data managers for each of
+the different assets. One key advantage of this design, however, is that DataManager entirely **encapsulates away 
+the implementation decisions** of how we stored our data. Between the first and second sprint we switched from using  
+only the file system to using a database and it did not affect anyone else's code. This demonstrates the flexibility 
+of the **delegation pattern** used in the data module because it shows how different data related decisions can be 
+made in different ways and we can easily change how we manage the data without affecting other parts of the project.
+
+The DataManager calls methods on the `DatabaseEngine`. The `DatabaseEngine` delegates responsibility to the various
+Queriers, that are each associated with a corresponding table in the database for querying the database. This 
+decision was made to break up the responsibility of the DatabaseEngine and to
+also limit the amount of code in the class to just be database resource management (opening and closing the connection).
+
+#### Database Design Goals and Code
+A large portion of my role on the team was not specifically related to writing code but more related to setting up 
+the database and using the database wisely. I realize that storing images in a database is not a good practice, but 
+we decided as a team that it would be better to just use the database to store the images than to set up another 
+storage system just for the images and have to worry about more dependencies in our project and getting them set up 
+on everybody's computer. Furthermore, I realize that there are some other database bad practices such as relying on 
+the authoring environment to uniquely concatenate the author name and game name together to use as a prefix when 
+saving images instead of having an author name and game name as fields that form a primary key with the image name in
+ the Images table the database, but it is what our team decided to do so that the engine would not have to know the 
+ game name and the author name when loading the images back in to be used in the game. 
+ 
+A challenge that arose in my part of the project was managing strings. Seeing as a big part of the role of the data 
+module was querying the database, there were a lot of queries to manage and each of them were a string. I tried to 
+balance the trade off of **readability** and not hard coding strings by using `String.format` to build my strings and
+ declare them as constants at the top of each `Querier`. The `String.format` makes it easier to read the full SQL 
+ statement to get an understanding of what the query is trying to accomplish. 
+ 
+As part of the design of the data module I was also concerned with **security** when accessing the database. For user
+ passwords, I made sure we did not store plain text by hashing the password and authenticating a user by checking 
+ that the hash of the password they entered matched the hash that was stored in the database.  Additionally, to 
+ combat the threat of **SQL Injection Attacks**, I made sure all queries were executed using the `PreparedStatement` 
+ interface. The prepared statements also allowed me to reuse some popular queries, enhance the **readability** of the 
+ queries, and improve the **efficiency** of the database accesses.
+ 
+Another concern with the database was **resource management**. I know that it is important to close all resources you
+ open, and as the data module there were many resources opened and closed throughout. To be methodical about the 
+ opening and closing of resources while not making the code too long or complex, I used **try-with-resources** wherever 
+ possible to avoid the `finally` blocks. Additionally, I implemented the `DatabaseEngine` using a **singleton design 
+ pattern** after much deliberation with some TAs. I decided this would be the best way to make sure that every 
+ connection to the database gets opened just once and closed at the end. To ensure this, I overrode the `stop()` 
+ methods of our JavaFX Applications to close the connection to the singleton instance of the database which would go 
+ through and close all the prepared statements (which closes their ResultSets), having a cascading effect of closing 
+ all open resources.
+
+#### Design Checklist
+As mentioned above, I struggled to manage the strings that were to be used as SQL queries. I left them as constants 
+defined in the class, rather than reading them in from a properties file, to help with the readability of the code so
+the query in `String.format` form would be right there so another maintainer could easily see what query was being 
+run and match up the strings (also declared as constants) with the `%s`. I also was sure to use prepared statements 
+for all the SQL queries.
+ 
+There are two main issues that show up in the Design tool. The first has to do with not logging exceptions and just 
+throwing them or catching them instead and we agreed internally as a team in each case how we wanted to handle the 
+exceptions, so I don't think it is too big of an issue. The second issue that comes up in the design tool is that the
+`DataManager` and `DatabaseEngine` classes have too many methods and should be split up into different classes. When 
+talking to my TA about this, he said that it is okay if a class is serving as a delegator for it to have a lot of one
+line methods but, as mentioned earlier, I think it would be better design to split the DataManager up into three 
+classes, one to manage assets, one to manage game data, and one to manage user information and to implement the data
+external api across multiple classes that follow the **single responsibility principle**.
+  
+Another design checklist issue not mentioned on the tool is a naming convention that we agreed on internally as a 
+team to refer to GameCenterData objects as game info and the Game objects that hold all the entities and events as 
+game data, but to an outsider I realize these **naming conventions** are not intuitive and should be fixed to make 
+the api **harder to misuse** and easier to understand.
+
+Finally, IntelliJ gives a lot of errors about **duplicated code** between different `Querier` subclasses, but I could
+ not find a way to remove that duplication no matter how hard I tried because each prepared statement had to be 
+ initialized and prepared individually. I tried using maps and lists to set them all up in a for loop but it appears 
+ that this amount of duplication was unavoidable
 
 
-### Flexibilty
+#### One Good Feature: Querier hierarchy
+I chose this code because I thought it was an interesting and effective approach to breaking up how the database is 
+accessed by defining Java classes that correspond to different tables in the database so the information about the 
+tables can be **encapsulated** so only that querier knows about it. This class hierarchy also made for easier 
+**resource management** and was inline with the **single responsibility principle**
+
+This feature is requires the abstract superclass `Querier` and its subclasses as well as the `DatabaseEngine` and 
+its connection to the database. The inheritance allows for the removal of a lot of **duplicated code** when it comes 
+to closing the statements.
+
+
+
+### Flexibility
 
 
 ### Alternate Designs
