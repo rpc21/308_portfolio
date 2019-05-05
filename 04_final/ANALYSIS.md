@@ -342,7 +342,123 @@ engine api **easy to misuse** and **not easily exstensible**.
 
 
 ### Alternate Designs
+#### API That Changed: External Data API
+One API that changed slightly throughout the project was the external data api. One o the changes that was made was 
+that the save and load methods would include the author name as well as the game name. This change was made when we 
+decided that we wanted to store our games on a database and allow anyone running our program to play anyone else's 
+games. Thus, we ran into the problem where we had to decide what we wanted to be unique. As a team we decided that we
+wanted different authors tobe able to create games of the same name, and we definitely wanted to be sure that no 
+author could overwrite someone else's game. Therefore we set up a constraint in our database that the game name + 
+the author name formed a unique combination. This allowed two different authors to write games of the same name.
+ 
+To make this change, however, we had to slightly change he data module's external api so that the save and load 
+methods would also include the author name so we could uniquely identify the game in the database. This change 
+required other group members to make **slight changes** to their code, but we handled the transition 
+**incrementally** by first deprecating the old methods before removing them entirely.
 
+Another decision that was made to change in the data module's external API was to accept and return `GameCenterData` 
+objects in the save/load game info methods. This change made our API slightly more **concrete**, and slightly **less 
+flexible** because it no longer 
+accepted a generic object, but it also made our API **safer** and **harder to misuse** because it would enforce that 
+the objects actually being passed to and returned from the methods would be valid GameCenterData objects. This 
+required less error checking and casting outside of the data module, ultimately making the API **easier to use**.
+
+These decisions were made in team settings among members of the team that were implementing the API as well as the 
+members of the team that were using the API to ensure that we wouldn't have to make too many changes to other 
+people's code.
+
+One API change that I proposed was to split up the Data External API to be implemented by several classes instead of 
+just one has I have mentioned many times throughout this analysis, but that change was rejected by my teammates 
+because they wanted it to all be implemented by one class so that it would be easier for them to use because they 
+could always just use the same class whenever they wanted to call a method from the data external API.
+
+#### Design Decision #1: Creating a popup superclass in the game center
+One design decision made in the project was to create a superclass of popups in the game center to handle all the 
+different kinds of messages that could be displayed to users.
+
+Pros:
+* Whenever a new popup is created, a lot of the starter code is already complete in the Popup superclass
+* All of the popups have similar style and structure, which creates a more appealing UI
+* Reduces duplicated code between classes 
+
+Cons: 
+* Because the structure is all very similar, users don't have much choice in customizing the top/bottom of their popup panel
+* The **abstraction** of the superclass is never utilized in the code, so the superclass is mostly just for methods with
+ the same functionality
+
+Alternatives: 
+* Create separate classes for every popup and either
+    * Have **duplicated code** in similar methods - this is bad because we want to avoid duplicated code at all costs. 
+    If the user wants to change something about a popup, they shouldn't have to do it in every single popup class. 
+    * Put similar methods in Utilities class - this is bad because most classes won't need to use these methods. Having them in the Utilities class is essentially giving everything access to them, which is unnecessary. 
+
+Preference:
+* I prefer the popup superclass idea because it avoids **duplicated code** and forms a natural grouping among similar
+ parts of the game center that makes the code **easy to understand** for future developers or maintainers and 
+ **easily extendable** to other types of popups.
+ 
+#### Design Decision #2: Entity-Component-System Design vs. Inheritance Based Design
+Perhaps the biggest design decision we had to make throughout the project was whether we should use an 
+**Entity-Component-System** design for our games or to use an **inheritance** based design. We ultimately decide on 
+an ECS design that works as follows:
+
+Any game level played by the user is built on a set of entities, and an entity can possess any combination of 
+components. The `Engine` class accepts a `Level` object from `Runner`, and retrieves the entities and events (that were created by user in the authoring environment) from the `Level`. 
+Internally, engine is built on multiple systems, each of which serves certain functionalities under general 
+platformer game rules, such as movement control, collision detection, ImageView display, etc. On every game loop, the `Engine` class receives input Keycodes from `Runner`, invokes the systems to update `Component` values for every `Entity`, executes each `Event` to trigger certain actions when corresponding conditions are met, and returns the updated entities back to `Runner` for front-end display.
+1) Entity
+An `Entity` is the basic element in a game. components that define its properties (collidablility, visibility, health, etc.). Entities for a game level are created in the Authoring Environment, and packaged into a `Level` object when author saves the game.
+2) Component
+A `Component` is essentially a container of value. There is an abstract super `Component` class, which is extended by many concrete sub-classes to hold values of certain types (Double, Boolean, String, etc.) for different purposes (position, image, sound, etc.). `Component` values of entities are updated on the game loops.
+3) System
+General platformer game rules are baked into the systems to update `Component` values for entities when running a game. Under an abstract `VoogaSystem` class, several concrete sub-system classes are designed to apply different rules concerning certain concrete `Component` classes. In order to interact with an entity and modify its components, a system requires the entity to possess a certain set of components, and applies a filtering method to only deal with eligible entities (e.g. `MovementSystem` only deals with entities with `XPositionComponent` and `YPositionComponent`).
+4) Event
+Events are designed to capture any sophisticated or custom game logic, that cannot be reasonably pre-built and incorporated as a `System`. Events are composed of `Conditions` and `Actions`
+5) Condition
+Conditions are the set of necessary pre-cursors for an Event. The conditions may include key inputs, collisions, or any number of state requirements for a game variable (x position, y position, health...)
+6) Action
+Actions are the executed changes of an Event. They are only executed if the conditions have been met. These changes will often be modifications to components of entities. 
+
+Pros:
+* Allows for **maximum flexibility** for the user in terms of how they want to create their game because they can 
+create any kind of entity from the different component building blocks
+* Caters to the advanced user that wants maximum control over the games that they are creating
+* Makes the engine design super **easy to implement** because there is very little work that has to be done because 
+it all rests on the user and the authoring environment
+* Makes it so the engine design is **not tied to our game genre** and it could be **easily extended** to make games 
+of a different genre
+
+Cons:
+* Makes it so user has to specify every small little detail of their game
+* Difficult **learning curve** for a user and the authoring environment
+* Creates **back-channel dependencies** about what is required for each entity, action and event
+* Places a lot of responsibility on the user and the authoring environment to implement the game logic that I would 
+normally assume would be part of the engine's responsibility
+
+Alternate Design: Inheritance Based Design
+The other design that we considered was an inheritance based design where we would have on top-level abstract 
+super-class that is a `GamePiece` or `GameComponent` that would then have several **abstract subclasses** of the 
+different types of game components such as `Hero`, `Monster`, `Obstacle`, `Powerup`, etc. that would extend from it. 
+This design would provide the user with several default game pieces they could play with and change the interactions 
+between. This design also has many pros and cons:
+
+Pros:
+* **Leverages abstractions and inheritance** to have simple interactions and game logic in the engine
+* Makes it easy for a beginning user to create a game quickly
+* Fewer **back-channel dependencies**
+* Puts more of the game logic back in the engine rather than in the authoring environment.
+
+Cons:
+* Less **flexibility** and control for the user
+* Less customizability
+
+Preference:
+* I would have preferred the inheritance based design because it would be easier for the authoring environment and 
+for the user and would leverage many of the good coding practices we have learned this year such as utilizing 
+**polymorphism** effectively as well as creating useful **abstractions**.
+* Additionally there would be much less type/class checking and casting because it would all be handled by the 
+abstractions and polymorphism.
+  
 
 ### Conclusions
 
