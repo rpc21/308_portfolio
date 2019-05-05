@@ -263,6 +263,82 @@ Again, the main assumption that affects this part of the code, and the data modu
 author name will be unique. One author cannot make two games of the same name.
 
 ### Flexibility
+#### My API
+The API I was most involved in designing was the data module API. I have already described my API in detail many 
+times so I will keep this brief. The data module's external API had a good balance 
+between power and flexibility by being based on primarily 'puts' and 'gets' allowing other modules to store and 
+retrieve their data. This design is very **simple** because there are really only two kinds of methods the users have
+to familiarize themselves with, yet the API is very powerful because it essentially gives users a model for their 
+view where they can easily access and update the data and state that they have saved and then be able to display it 
+however they want. This API design is very similar to a **key-value store** interface which has been proven to be 
+both **powerful** and **simple**. The one part of the API that makes it harder to use or easy to misuse, are some of 
+the naming conventions. We agreed on internally as a team to refer to GameCenterData objects as game info and the 
+Game objects that hold all the entities and events as game data, but to an outsider I realize these **naming 
+conventions** are not intuitive and should be fixed to make the api **harder to misuse** and easier to understand.
+
+#### One good feature - Authoring Environment Internal API
+Authoring created its own version of an Entity, a Level, and Events with JavaFX **binding/listening** features that 
+would
+not have been serializable had they existed in the same classes other modules used to run games. These, along with 
+some classes to manage them, acted as the backend of our authoring module. This backend enabled us to use binding to 
+update entity properties in multiple areas of the UI as new instances were instantiated and their characteristics 
+were changed. The graphics directly presented to the author were bound to this backend such that they could be edited
+and updated appropriately. Once the user chooses to save, the front-end version of the entities, levels, and events 
+are translated into the Entity, Level, and Events that are exported from the engine. This translation removes all 
+JavaFX and allows for the serialization of the complete Game Object. Similarly, there are mechanisms to translate a 
+saved game back into a version that is editable by the authoring frontend.
+
+I chose this feature to discuss because I was really impressed with how **effectively** the authoring environment 
+**communicated internally** using **property binding** and **event listening**. When I worked on the front end of 
+SLogo I realized how difficult it can be to make sure all parts of the front end are always in sync with each other 
+and that was on a much smaller scale so I was very impressed with how our authoring environment was able to keep 
+consistency between all the different components so well.
+
+Another specific feature of the Authoring Environment that I was impressed by was the decision to provide default 
+entities to the user. This feature was implemented using the Data folder of the authoring environment. I am 
+particularly impressed by this feature's **extensibility**. 
+
+Adding a new default type is extremely easy. A new XML file would need to be created in the Data folder in the   
+Authoring module. Each file would need to have a Category tag, this can be anything but those with the same category 
+will be displayed under the same tab. There also needs to be a Components tag and within that, there has to be a Name
+tag. Beyond that, it's just mixing and matching components. The tags need to be the same name as one of the 
+components in engine and currently the reflection supports doubles, Strings, integers, and booleans for arguments. I 
+believe this encompasses most if not all of the components in engine, allowing for a wide array of possibilities.  
+Once the file is created, it will automatically be added as an option in the Authoring Environment.
+
+This part is very **easy to extend** and is **closed to modification**, a great example of the **Open/Closed 
+Principle** because to add a new default type you just have to add a new XML file in the data folder, and it will 
+automatically populate into the authoring environment. There is actually **no Java code needed** to extend this 
+feature which is amazing.
+
+#### One bad feature: Engine external API to Authoring
+I chose this code because it shows an interesting way of how design decisions in one section of the program propagate
+through and affect other parts of the program. Specifically, this part of the project shows how maximum flexibility 
+in one part of the project can make life very difficult in another part of the project.
+ 
+The engine design adopts an Entity-Component-System architecture: any game level played by the user is 
+built on a set of entities, and an entity can possess any combination of components. The `Engine` class accepts a 
+`Level` object from `Runner`, and retrieves the entities and events (that were created by user in the authoring environment) from the `Level`. 
+Internaly, engine is built on multiple systems, each of which serves certain functionalities under general platformer game rules, such as movement control, collision detection, ImageView display, etc. On every game loop, the `Engine` class receives input Keycodes from `Runner`, invokes the systems to update `Component` values for every `Entity`, executes each `Event` to trigger certain actions when corresponding conditions are met, and returns the updated entities back to `Runner` for front-end display.
+1) Entity
+An `Entity` is the basic element in a game. components that define its properties (collidablility, visibility, health, etc.). Entities for a game level are created in the Authoring Environment, and packaged into a `Level` object when author saves the game.
+2) Component
+A `Component` is essentially a container of value. There is an abstract super `Component` class, which is extended by many concrete sub-classes to hold values of certain types (Double, Boolean, String, etc.) for different purposes (position, image, sound, etc.). `Component` values of entities are updated on the game loops.
+3) Event
+Events are designed to capture any sophisticated or custom game logic, that cannot be reasonably pre-built and incorporated as a `System`. Events are composed of `Conditions` and `Actions`
+4) Condition
+Conditions are the set of necessary pre-cursors for an Event. The conditions may include key inputs, collisions, or any number of state requirements for a game variable (x position, y position, health...)
+5) Action
+Actions are the executed changes of an Event. They are only executed if the conditions have been met. These changes will often be modifications to components of entities. 
+
+The engine was designed to be **maximally flexible and extensible**. The engine provides components which are 
+essentially variable holders to the the authoring environment and the authoring environment attaches these components
+to an entity. This design put a lot of work and pressure on the authoring environment to ensure that each entity had
+all the necessary components to carry out its actions. This design introduced many **back-channel dependencies** to
+our project and prevents the authoring environment from being **closed to modification**. Whenever the engine 
+decides to add a new kind of collision, action or event, it is a lot of work for the authoring environment because 
+many of these classes have different constructors and different requirements that are **non-intuitive** making the
+engine api **easy to misuse** and **not easily exstensible**.
 
 
 ### Alternate Designs
