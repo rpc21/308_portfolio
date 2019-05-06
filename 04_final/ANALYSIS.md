@@ -623,5 +623,17 @@ parts of th program and how maximum flexibility in one area can lead to really h
     suite of junit tests for my methods to make sure my teammates and I agreed upon how methods would work, and to 
     make refactoring much safer and easier because I would have the reassurance that the methods still work as 
     expected. 
+    
+    
+### Code Masterpiece
+For my code masterpiece I split up the monolithic `DataManager` class into three smaller class with more well defined
+responsibilities, that are more inline with the **Single Responsibility Principle**. By extension, I also broke up 
+the data module's external API to be implemented by more that one class. I also created a `Serializer` interface that
+can be used to hide the implementation decisions of how we are serializing our game data and so it would be very 
+easy to change to a different implementation decision such as using json instead of xml. I worked really hard on my 
+code masterpiece and tried to show good design principles but due to the nature of my part of the project and our 
+team goal's of encapsulating the implementation decisions of the data storage from the other modules, there is not 
+much "flashy" design to be done on my part of the project, but I think I demonstrated more impressive design in my 
+SLogo code masterpiece with my use of reflection, generics, and lambdas.
 
 
