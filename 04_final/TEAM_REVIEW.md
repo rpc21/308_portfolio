@@ -97,7 +97,7 @@ operations that were incredibly difficult to debug due to their complexity and l
 be unfocused on the goals of the whole team and more focused just on the game he was making. Left our final meeting 
 before the code freeze to watch Game of Thrones for two hours which rubbed some people the wrong way.
  
-dkf8 - Not enough information to rate
+dkf8 - Not enough information to rate 
 
 lbj7 - Very calming presence on the team. Missed three team meetings due to travel which is not his fault of course 
 but nobody else missed any team meetings. Did not implement a couple features we were expecting such as saving scores
